@@ -38,7 +38,7 @@ int main(int argc, const char** argv) {
         std::cerr << "BIOS too small\n";
         exit(1);
     };
-    bios.seekg(std::ios::beg);
+    bios.seekg(0, std::ios::beg);
 
     u8 tempbuf[0x10000];
     if (bios.is_open()) {
