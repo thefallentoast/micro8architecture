@@ -21,6 +21,43 @@ u8 nextbyt(regfile_t &regfile, u8* mem) {
 void execute(regfile_t &regfile, u8* mem) {
     // 1. fetch (get instruction)
     regfile.ir = nextbyt(regfile, mem);
+    // CI = compact instructions, EI = extended instructions (two-byte at least)
+    // 2. decode (CI or EI)
+    bool CIorEI = (regfile.ir & 0xF0) == 0; // True if EI
+    bool implied = (regfile.ir >> 4) == 0;  // True if in the implieds block
+    // 3. execute
+    if (implied) {
+        // Implied block executes first
+        switch (regfile.ir) {
+            // TODO
+            default: {
+                break;
+            }
+        }
+    } else if (CIorEI) {
+        // Run EI before CI
+        u8 instrbyte = nextbyt(regfile, mem);
+        switch (instrbyte | ((regfile.ir & 0xF) << 4)) {
+            // TODO
+            default: {
+                break;
+            }
+        }
+    } else {
+        // CI decode
+        switch (regfile.ir >> 4) {
+            // TODO
+            default: {
+                break;
+            }
+        }
+    }
+    return;
+}
+
+/*void execute(regfile_t &regfile, u8* mem) {
+    // 1. fetch (get instruction)
+    regfile.ir = nextbyt(regfile, mem);
     // 2,3. decode and execute
     
     switch((regfile.ir & 0b11100000) >> 5) {
@@ -31,7 +68,7 @@ void execute(regfile_t &regfile, u8* mem) {
             // Register indexes are obtained from the second byte
             u8 indexes = nextbyt(regfile, mem);
             int idx1 = indexes >> 4;
-            int idx2 = indexes && 0b1111;
+            int idx2 = indexes & 0b1111;
             // Get the register
             u32 value = regfile_read(regfile, idx1, byt1);
             // Write
@@ -66,4 +103,4 @@ void execute(regfile_t &regfile, u8* mem) {
             break;
         }
     }
-}
+}*/
