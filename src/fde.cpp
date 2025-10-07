@@ -6,7 +6,7 @@
 u8 nextbyt(regfile_t &regfile, u8* mem) {
     u32 pc = regfile_ginc(regfile);
     u8 byt = mem[(pc & 0xFFFF) | (regfile.cs << 16)];
-    /* USED PREVIOUSLY FOR DEBUGGING 
+    /*USED PREVIOUSLY FOR DEBUGGING 
     std::cout << "Read byte 0x" 
               << std::hex
               << std::setw(2) << std::setfill('0')
@@ -19,7 +19,15 @@ u8 nextbyt(regfile_t &regfile, u8* mem) {
 }
 
 inline bool check_cond(regfile_t &regfile, u8* mem) {
-    // TODO
+    bool flip = (regfile.ir & 0x8) >> 3;
+    switch (regfile.ir & 0x7) {
+        case CONDITIONS::AL: {
+            return true ^ flip;
+        }
+        case CONDITIONS::ZF: {
+            return (regfile.flags & FLAGS::ZERO) ^ flip;
+        }
+    }
     return true;
 }
 
@@ -30,6 +38,7 @@ void execute(regfile_t &regfile, u8* mem) {
     // 2. decode (CI or EI)
     bool CIorEI = (regfile.ir & 0xF0) == 0xF0; // True if EI
     bool implied = (regfile.ir >> 4) == 0;  // True if in the implieds block
+    //std::cout << "IR: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)regfile.ir << std::endl;
     // 3. execute
     if (implied) {
         // Implied block executes first
@@ -42,6 +51,7 @@ void execute(regfile_t &regfile, u8* mem) {
             case INSTRUCTION::OUT: {
                 u16 outport = regfile.edx & 0xFFFF;
                 u8 data = regfile.eax & 0xFF;
+                //std::cout << "OUT: " << std::hex << (int)outport << " " << std::hex << (int)data << std::endl;
                 if (outport == 1) {
                     // Print to stdout
                     std::cout << data;
@@ -66,16 +76,26 @@ void execute(regfile_t &regfile, u8* mem) {
         // CI decode
         switch (regfile.ir >> 4) {
             // TODO
+            case INSTRUCTION::INC: {
+                u32 *reg = regfile_seek(regfile, regfile.ir & 0xF);
+                ++*reg; // Just increment the value
+                regfile.flags = SETFLAG(regfile.flags, FLAGS::CARRY | FLAGS::ZERO, *reg == 0);
+                regfile.flags = SETFLAG(regfile.flags, FLAGS::OVERFLOW, *reg == 0x80000000);
+            }
+            case INSTRUCTION::DEC: {
+                --*regfile_seek(regfile, regfile.ir & 0xF); // Just decrement the value
+            }
             case INSTRUCTION::JMPSC: {
                 // Condition is regfile.ir & 0xF;
-                bool condition = check_cond(regfile, mem);
-                if (condition) {
-                    regfile.pc += nextbyt(regfile, mem); // Get the value to jump from the next byte
+                if (check_cond(regfile, mem)) {
+                    regfile.pc += (i8)nextbyt(regfile, mem); // Get the value to jump from the next byte    
                 }
+                break;
             }
             case INSTRUCTION::MOVIMMLO: {
                 u8 imm = nextbyt(regfile, mem); 
                 u8 reg = regfile.ir & 0xF;
+                //std::cout << "MOV: " << std::hex << (int)regfile.ir << " " << std::hex << (int)imm << std::endl;
                 // Write to register
                 regfile_writ(regfile, imm, reg, 1); // Always to L
                 break;
