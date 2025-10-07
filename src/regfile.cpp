@@ -28,8 +28,27 @@ void regfile_init(regfile_t &regfile) {
     regfile is the regfile (duh).
     reg is an index from 0 to 11, representing the register in the register file.
 */
+
 inline u32* regfile_seek(regfile_t &regfile, int reg) {
-    return &regfile.eax + reg;
+    switch (reg) {
+        case 0x0: return &regfile.eax;
+        case 0x1: return &regfile.ebx;
+        case 0x2: return &regfile.ecx;
+        case 0x3: return &regfile.edx;
+
+        case 0x4: return &regfile.si;
+        case 0x5: return &regfile.di;
+
+        case 0x6: return &regfile.ds;
+        case 0x7: return &regfile.cs;
+        case 0x8: return &regfile.ss;
+        case 0x9: return &regfile.es;
+
+        case 0xA: return &regfile.pc;
+        case 0xB: return &regfile.ir;
+        case 0xC: return &regfile.flags;
+        default: return &regfile.eax;
+    };
 }
 
 /*
@@ -45,7 +64,7 @@ void regfile_writ(regfile_t &regfile, u32 value, int reg, int byt) {
     // 1. obtain pointer to the register
     u32 *regfile_register = regfile_seek(regfile, reg);
     // 2. write
-    *regfile_register = (reg & mask[byt]) | ((value & ~mask[byt]) >> shift(byt));
+    *regfile_register = (*regfile_register & mask[byt]) | ((value & ~mask[byt]) << shift(byt));
     return;
 }
 

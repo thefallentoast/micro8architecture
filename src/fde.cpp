@@ -18,18 +18,37 @@ u8 nextbyt(regfile_t &regfile, u8* mem) {
     return byt;
 }
 
+inline bool check_cond(regfile_t &regfile, u8* mem) {
+    // TODO
+    return true;
+}
+
 void execute(regfile_t &regfile, u8* mem) {
     // 1. fetch (get instruction)
     regfile.ir = nextbyt(regfile, mem);
     // CI = compact instructions, EI = extended instructions (two-byte at least)
     // 2. decode (CI or EI)
-    bool CIorEI = (regfile.ir & 0xF0) == 0; // True if EI
+    bool CIorEI = (regfile.ir & 0xF0) == 0xF0; // True if EI
     bool implied = (regfile.ir >> 4) == 0;  // True if in the implieds block
     // 3. execute
     if (implied) {
         // Implied block executes first
         switch (regfile.ir) {
             // TODO
+            case INSTRUCTION::HLT: {
+                regfile.flags |= FLAGS::STOP;
+                break;
+            }
+            case INSTRUCTION::OUT: {
+                u16 outport = regfile.edx & 0xFFFF;
+                u8 data = regfile.eax & 0xFF;
+                if (outport == 1) {
+                    // Print to stdout
+                    std::cout << data;
+                    break;
+                }
+                // TODO: Write to output file
+            }
             default: {
                 break;
             }
@@ -47,6 +66,20 @@ void execute(regfile_t &regfile, u8* mem) {
         // CI decode
         switch (regfile.ir >> 4) {
             // TODO
+            case INSTRUCTION::JMPSC: {
+                // Condition is regfile.ir & 0xF;
+                bool condition = check_cond(regfile, mem);
+                if (condition) {
+                    regfile.pc += nextbyt(regfile, mem); // Get the value to jump from the next byte
+                }
+            }
+            case INSTRUCTION::MOVIMMLO: {
+                u8 imm = nextbyt(regfile, mem); 
+                u8 reg = regfile.ir & 0xF;
+                // Write to register
+                regfile_writ(regfile, imm, reg, 1); // Always to L
+                break;
+            }
             default: {
                 break;
             }
